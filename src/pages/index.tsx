@@ -17,9 +17,9 @@ import {
   setTodos,
   setTodosLoading,
   setTodosError,
-  addTodo,
-  updateTodo,
-  deleteTodo,
+  createRecord,
+  updateRecord,
+  deleteRecord,
   TODOS_TABLE_ID,
 } from '@/redux/slices/tables';
 import axios from '@/utils/axios';
@@ -48,7 +48,17 @@ export default function TodoPage() {
           sort: [{ field: "created_at", direction: "desc" }],
           amount: "all"
         });
-        dispatch(setTodos(response.data.records));
+        // Transform the response data to match our Todo interface
+        const transformedTodos = response.data.records.map((record: any) => ({
+          id: record.id,
+          title: record.title,
+          completed: record.completed,
+          created_at: record.created_at,
+          created_time: record.created_time,
+          last_modified_time: record.last_modified_time,
+          last_modified_by: record.last_modified_by,
+        }));
+        dispatch(setTodos(transformedTodos));
       } catch (error) {
         dispatch(setTodosError(error instanceof Error ? error.message : 'Failed to fetch todos'));
       } finally {
@@ -62,20 +72,12 @@ export default function TodoPage() {
   const addTodoHandler = async () => {
     if (newTask.trim()) {
       try {
-        const newTodo = {
+        await dispatch(createRecord(TODOS_TABLE_ID, {
           title: newTask,
           completed: false,
           created_at: new Date().toISOString()
-        };
-
-        const response = await axios.post(`/table/${TODOS_TABLE_ID}/record`, {
-          records: [newTodo]
-        });
-        
-        if (response.data.records && response.data.records[0]) {
-          dispatch(addTodo(response.data.records[0]));
-          setNewTask('');
-        }
+        }));
+        setNewTask('');
       } catch (error) {
         console.error('Failed to add todo:', error);
       }
@@ -84,15 +86,9 @@ export default function TodoPage() {
 
   const toggleTodo = async (todo: Todo) => {
     try {
-      const response = await axios.patch(`/table/${TODOS_TABLE_ID}/record/${todo.id}`, {
-        fields: {
-          completed: !todo.completed
-        }
-      });
-      
-      if (response.data.record) {
-        dispatch(updateTodo(response.data.record));
-      }
+      await dispatch(updateRecord(TODOS_TABLE_ID, todo.id, {
+        completed: !todo.completed
+      }));
     } catch (error) {
       console.error('Failed to update todo:', error);
     }
@@ -100,8 +96,7 @@ export default function TodoPage() {
 
   const deleteTodoHandler = async (id: number) => {
     try {
-      await axios.delete(`/table/${TODOS_TABLE_ID}/record/${id}`);
-      dispatch(deleteTodo(id));
+      await dispatch(deleteRecord(TODOS_TABLE_ID, id));
     } catch (error) {
       console.error('Failed to delete todo:', error);
     }
@@ -116,7 +111,7 @@ export default function TodoPage() {
   }
 
   const todosList = Array.isArray(todos) ? todos : [];
-  const completedCount = todosList.filter(todo => todo.completed).length;
+  const completedCount = todosList.filter(todo => todo?.completed).length;
 
   return (
     <Card className="w-full max-w-2xl mx-auto mt-8 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
