@@ -1,10 +1,14 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 
 interface Todo {
-  id: string;
+  id: number;
   title: string;
   completed: boolean;
   created_at: string;
+  created_time: string;
+  last_modified_time: string;
+  last_modified_by: string;
 }
 
 interface TablesState {
@@ -47,11 +51,17 @@ const tablesSlice = createSlice({
         state.todos.items[index] = action.payload;
       }
     },
-    deleteTodo: (state, action: PayloadAction<string>) => {
+    deleteTodo: (state, action: PayloadAction<number>) => {
       state.todos.items = state.todos.items.filter(todo => todo.id !== action.payload);
     },
   },
 });
+
+// Selectors
+export const selectTableRecords = (state: RootState) => state.tables.todos.items;
+export const selectIsLoading = (state: RootState) => state.tables.todos.loading;
+export const selectTableSchema = (state: RootState) => null; // Add proper schema if needed
+export const selectSchemaLoading = (state: RootState) => false;
 
 export const {
   setTodos,

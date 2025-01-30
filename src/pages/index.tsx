@@ -62,15 +62,20 @@ export default function TodoPage() {
   const addTodoHandler = async () => {
     if (newTask.trim()) {
       try {
+        const newTodo = {
+          title: newTask,
+          completed: false,
+          created_at: new Date().toISOString()
+        };
+
         const response = await axios.post(`/table/${TODOS_TABLE_ID}/record`, {
-          records: [{
-            title: newTask,
-            completed: false,
-            created_at: new Date().toISOString()
-          }]
+          records: [newTodo]
         });
-        dispatch(addTodo(response.data.records[0]));
-        setNewTask('');
+        
+        if (response.data.records && response.data.records[0]) {
+          dispatch(addTodo(response.data.records[0]));
+          setNewTask('');
+        }
       } catch (error) {
         console.error('Failed to add todo:', error);
       }
@@ -84,7 +89,10 @@ export default function TodoPage() {
           completed: !todo.completed
         }
       });
-      dispatch(updateTodo(response.data.record));
+      
+      if (response.data.record) {
+        dispatch(updateTodo(response.data.record));
+      }
     } catch (error) {
       console.error('Failed to update todo:', error);
     }
